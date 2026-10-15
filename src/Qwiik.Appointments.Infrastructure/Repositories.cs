@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Qwiik.Appointments.Core;
 using Qwiik.Appointments.Core.Entities;
@@ -17,7 +18,16 @@ public class AppointmentRepository : IAppointmentRepository
     public async Task AddAsync(Appointment appointment, CancellationToken ct)
     {
         _db.Appointments.Add(appointment);
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqliteException { SqliteErrorCode: 19 } s
+                                           && s.Message.Contains("UNIQUE"))
+        {
+            _db.ChangeTracker.Clear();
+            throw new SlotConflictException("Token already taken for this date.", ex);
+        }
     }
 
     public Task<List<Appointment>> GetQueueAsync(DateOnly date, CancellationToken ct) =>

@@ -1,10 +1,10 @@
-// BookingService.cs
 using Qwiik.Appointments.Core.Entities;
 namespace Qwiik.Appointments.Core;
 
 public class BookingService : IBookingService
 {
     private const int MaxLookAheadDays = 365;
+    private const int MaxAttempts = 5;
     private readonly IAppointmentRepository _appointments;
     private readonly IAgencyConfigRepository _config;
     private readonly TimeProvider _time;
@@ -19,6 +19,22 @@ public class BookingService : IBookingService
         var today = DateOnly.FromDateTime(_time.GetLocalNow().DateTime);
         if (requestedDate < today) throw new BusinessRuleException("Cannot book an appointment in the past.");
 
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await TryBookAsync(name, phone, requestedDate, ct);
+            }
+            catch (SlotConflictException) when (attempt < MaxAttempts)
+            {
+                // Another request took the same token; back off briefly, then recompute.
+                await Task.Delay(Random.Shared.Next(10, 60), ct);
+            }
+        }
+    }
+
+    private async Task<BookingResult> TryBookAsync(string name, string phone, DateOnly requestedDate, CancellationToken ct)
+    {
         var max = await _config.GetMaxPerDayAsync(ct);
         var date = requestedDate;
 

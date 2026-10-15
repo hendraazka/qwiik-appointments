@@ -23,6 +23,12 @@ public class ExceptionHandlingMiddleware
             _logger.LogWarning("Business rule violation: {Message}", ex.Message);
             await Write(ctx, StatusCodes.Status400BadRequest, "Business rule violation", ex.Message);
         }
+        catch (SlotConflictException ex)
+        {
+            _logger.LogWarning(ex, "Booking conflict persisted after retries");
+            await Write(ctx, StatusCodes.Status409Conflict, "Conflict",
+                "Too many concurrent bookings for this day. Please retry.");
+        }
         catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
             _logger.LogWarning(ex, "Unique constraint violation, likely a concurrent booking");

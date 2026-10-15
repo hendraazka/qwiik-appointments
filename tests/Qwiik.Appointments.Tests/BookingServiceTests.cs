@@ -45,4 +45,27 @@ public class BookingServiceTests
         await Assert.ThrowsAsync<BusinessRuleException>(() =>
             Sut().BookAsync("Budi", "0812", new DateOnly(2020, 1, 1), default));
     }
+
+    [Fact]
+    public async Task Retries_after_slot_conflict_and_succeeds()
+    {
+        _appts.SetupSequence(a => a.AddAsync(It.IsAny<Appointment>(), It.IsAny<CancellationToken>()))
+              .ThrowsAsync(new SlotConflictException("taken"))
+              .Returns(Task.CompletedTask);
+
+        var r = await Sut().BookAsync("Budi", "0812", Day1, default);
+
+        Assert.Equal(Day1, r.Date);
+        _appts.Verify(a => a.AddAsync(It.IsAny<Appointment>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task Gives_up_with_conflict_after_max_attempts()
+    {
+        _appts.Setup(a => a.AddAsync(It.IsAny<Appointment>(), It.IsAny<CancellationToken>()))
+              .ThrowsAsync(new SlotConflictException("taken"));
+
+        await Assert.ThrowsAsync<SlotConflictException>(() => Sut().BookAsync("Budi", "0812", Day1, default));
+        _appts.Verify(a => a.AddAsync(It.IsAny<Appointment>(), It.IsAny<CancellationToken>()), Times.Exactly(5));
+    }
 }
