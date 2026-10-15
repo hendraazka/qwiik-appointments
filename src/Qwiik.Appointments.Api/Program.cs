@@ -1,3 +1,4 @@
+using Qwiik.Appointments.Api;
 using Microsoft.EntityFrameworkCore;
 using Qwiik.Appointments.Api.Middleware;
 using Qwiik.Appointments.Core;
