@@ -14,6 +14,7 @@ xUnit + Moq, Docker, GitHub Actions.
 dotnet run --project src/Qwiik.Appointments.Api --urls http://localhost:5080
 ```
 - Swagger UI: http://localhost:5080/swagger (the root URL redirects there)
+![Tampilan Swagger](./assets/swagger.png)
 - Health check: http://localhost:5080/health
 - The SQLite database (`appointments.db`) is created and migrated on startup.
 
