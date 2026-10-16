@@ -76,9 +76,8 @@ the API returns 409. Details and the incident write-up are in `RUNBOOK.md`.
 - SQLite allows a single writer; a production deployment should use a server database
   (e.g. Azure SQL) with serializable transactions or a per-day counter row.
 - No authentication or rate limiting.
-EOF
 
-cat > RUNBOOK.md << 'EOF'
+
 # Runbook: Appointment Booking API
 
 ## 1. Health and quick checks
